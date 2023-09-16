@@ -7,8 +7,10 @@
 @Time:        2023/09/16 10:49
 @Description: 批量创建 Wwise 空对象
 """
+import sys
 
 import PySimpleGUI as sg
+from Socket_Singleton import Socket_Singleton
 
 from waapi_support import WaapiClientX, CannotConnectToWaapiException
 from waapi_support import WaapiObject
@@ -23,7 +25,6 @@ class WaapiCreator:
         self.selected_type = ''
         self.selected_id = ''
         self.create_type = ''
-        self.connect()
         self.create_window()
         self.run()
 
@@ -32,12 +33,12 @@ class WaapiCreator:
             self.client = WaapiClientX(allow_exception=True)
             selected_result = self.client.call(URI.ak_wwise_ui_getselectedobjects,
                                                options={'return': ['id', 'name', 'type']})
-            if selected_result:
+            if selected_result and selected_result['objects']:
                 self.selected_id = selected_result['objects'][0]['id']
                 self.selected_name = selected_result['objects'][0]['name']
                 self.selected_type = selected_result['objects'][0]['type']
             self.client.subscribe(URI.ak_wwise_ui_selectionchanged, self.update_selected_object)
-        except  CannotConnectToWaapiException as e:
+        except  Exception as e:
             sg.popup_error(str(e), keep_on_top=True)
 
     def disconnect(self):
@@ -61,7 +62,8 @@ class WaapiCreator:
         layout = [
             # [sg.Menu(menu_def)],
             [sg.Text('Wwise Creator', font=('Helvetica', 16)),
-             sg.Checkbox('Pin', default=True, key='-PIN-', enable_events=True)],
+             sg.Checkbox('Pin', default=True, key='-PIN-', enable_events=True),
+             sg.Button('Connect to WAAPI', key='-CONNECT-'),],
             [sg.Text('Parent from selected: ', size=(15, 1)),
              sg.Text(f'{self.selected_name} | {self.selected_type}', key='-SELECTED_PATH-'), ],
             [sg.Text('Type to create: ', size=(15, 1)), sg.Text('Search'),
@@ -76,7 +78,7 @@ class WaapiCreator:
                 sg.Frame(title='Output:', layout=[[sg.Output(size=(40, 20), key='-OUTPUT-', echo_stdout_stderr=True)]])
             ],
         ]
-        self.window = sg.Window('WAAPI Creator', layout, keep_on_top=True)
+        self.window = sg.Window('WAAPI Creator', layout, keep_on_top=True, finalize=True)
 
     def run(self):
         def checkbox_show(value: str):
@@ -95,8 +97,17 @@ class WaapiCreator:
             # print(event, values)
             if event in (sg.WIN_CLOSED, 'Exit'):
                 break
+
             if event == '-PIN-':
                 self.window.TKroot.wm_attributes('-topmost', values['-PIN-'])
+            if event == '-CONNECT-':
+                self.window['-CONNECT-'].update(disabled=True)
+                self.connect()
+                if self.client is None:
+                    self.window['-CONNECT-'].update(disabled=False)
+                else:
+                    print('Connected to Wwise')
+                    self.window['-SELECTED_PATH-'].update(f'{self.selected_name} | {self.selected_type}')
             if event == '-SEARCH_TYPE-':
                 result = [i for i in self.type_list if i.lower().startswith(values['-SEARCH_TYPE-'].lower())]
                 if result:
@@ -170,4 +181,5 @@ class WaapiCreator:
 
 
 if __name__ == '__main__':
+    Socket_Singleton()
     WaapiCreator()
