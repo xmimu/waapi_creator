@@ -1,6 +1,6 @@
 # WAAPI Creator
 
-一个用来创建wwise对象的工具。[下载地址](https://github.com/xmimu/waapi_creator/releases/tag/1.0)
+一个用来创建wwise对象的工具。[下载地址](https://github.com/xmimu/waapi_creator/releases)
 
 ![image waapi_creator](waapi_creator.png)
 
