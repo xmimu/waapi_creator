@@ -32,7 +32,7 @@ class WaapiCreator:
         try:
             self.client = WaapiClientX(allow_exception=True)
             selected_result = self.client.call(URI.ak_wwise_ui_getselectedobjects,
-                                               options={'return': ['id', 'name', 'type']})
+                                               args={'return': ['id', 'name', 'type']})
             if selected_result and selected_result['objects']:
                 self.selected_id = selected_result['objects'][0]['id']
                 self.selected_name = selected_result['objects'][0]['name']
@@ -61,7 +61,7 @@ class WaapiCreator:
 
         layout = [
             # [sg.Menu(menu_def)],
-            [sg.Text('Wwise Creator', font=('Helvetica', 16)),
+            [sg.Text('Wapi Creator', font=('Helvetica', 16)),
              sg.Checkbox('Pin', default=True, key='-PIN-', enable_events=True),
              sg.Button('Connect to WAAPI', key='-CONNECT-'),],
             [sg.Text('Parent from selected: ', size=(15, 1)),
@@ -152,32 +152,22 @@ class WaapiCreator:
             print('Please input a name')
             return
 
-        if create_type == 'Sound':
-            for name in name_list:
-                self.client.call(URI.ak_wwise_core_object_create, {
-                    'parent': parent_id,
-                    'type': create_type,
-                    'name': name,
-                    '@IsVoice': is_voice
-                })
-                print(f'Create {name} successfully')
-        elif create_type == 'RandomSequenceContainer':
-            for name in name_list:
-                self.client.call(URI.ak_wwise_core_object_create, {
-                    'parent': parent_id,
-                    'type': create_type,
-                    'name': name,
-                    '@RandomOrSequence': is_random
-                })
-                print(f'Create {name} successfully')
-        else:
-            for name in name_list:
-                self.client.call(URI.ak_wwise_core_object_create, {
-                    'parent': parent_id,
-                    'type': create_type,
-                    'name': name,
-                })
-                print(f'Create {name} successfully')
+        args = {
+            'parent': parent_id,
+            'type': create_type,
+        }
+
+        for name in name_list:
+            args['name'] = name
+
+            if create_type == 'Sound':
+                args['@IsVoice'] = is_voice
+            if create_type == 'RandomSequenceContainer':
+                args['@RandomOrSequence'] = is_random
+
+            self.client.call(URI.ak_wwise_core_object_create, args=args)
+            print(f'Create {name} successfully')
+
 
 
 if __name__ == '__main__':
